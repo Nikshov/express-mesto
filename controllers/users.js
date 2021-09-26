@@ -3,8 +3,10 @@ const User = require('../models/user');
 const getUsers = (req, res, next) => {
   User.find({})
     .then((users) => res.status(200).json(users))
-    .catch(() => res.status(500).send({ message: 'Произошла ошибка' }))
-    .finally(next);
+    .catch(() => {
+      res.status(500).send({ message: 'Произошла ошибка' });
+    })
+    .catch(next);
 };
 
 const getUserById = (req, res, next) => {
@@ -21,7 +23,7 @@ const getUserById = (req, res, next) => {
       if (err.name === 'CastError') return res.status(400).send({ message: 'Невалидный id' });
       return res.status(500).send({ message: 'Произошла ошибка' });
     })
-    .finally(next);
+    .catch(next);
 };
 
 const createUser = (req, res, next) => {
@@ -32,7 +34,7 @@ const createUser = (req, res, next) => {
       if (err.name === 'ValidationError') return res.status(400).send({ message: 'Некорректные данные' });
       return res.status(500).send({ message: 'Произошла ошибка' });
     })
-    .finally(next);
+    .catch(next);
 };
 
 const updateUser = (req, res, next) => {
@@ -48,7 +50,7 @@ const updateUser = (req, res, next) => {
       if (err.name === 'CastError') return res.status(400).send({ message: 'Невалидный id' });
       return res.status(500).send({ message: 'Произошла ошибка' });
     })
-    .finally(next);
+    .catch(next);
 };
 
 const updateAvatar = (req, res, next) => {
@@ -64,7 +66,7 @@ const updateAvatar = (req, res, next) => {
       if (err.name === 'CastError') return res.status(400).send({ message: 'Невалидный id' });
       return res.status(500).send({ message: 'Произошла ошибка' });
     })
-    .finally(next);
+    .catch(next);
 };
 
 module.exports = {

@@ -3,8 +3,10 @@ const Card = require('../models/card');
 const getCards = (req, res, next) => {
   Card.find({})
     .then((cards) => res.status(200).send(cards))
-    .catch(() => res.status(500).send({ message: 'Произошла ошибка' }))
-    .finally(next);
+    .catch(() => {
+      res.status(500).send({ message: 'Произошла ошибка' });
+    })
+    .catch(next);
 };
 
 const createCard = (req, res, next) => {
@@ -18,7 +20,7 @@ const createCard = (req, res, next) => {
       if (err.name === 'CastError') return res.status(400).send({ message: 'Невалидный id' });
       return res.status(500).send({ message: 'Произошла ошибка' });
     })
-    .finally(next);
+    .catch(next);
 };
 
 const deleteCard = (req, res, next) => {
@@ -39,7 +41,7 @@ const deleteCard = (req, res, next) => {
       if (err.name === 'CastError') return res.status(400).send({ message: 'Невалидный id' });
       return res.status(500).send({ message: 'Произошла ошибка' });
     })
-    .finally(next);
+    .catch(next);
 };
 
 const likeCard = (req, res, next) => {
@@ -60,7 +62,7 @@ const likeCard = (req, res, next) => {
       if (err.name === 'CastError') return res.status(400).send({ message: 'Невалидный id' });
       return res.status(500).send({ message: 'Произошла ошибка' });
     })
-    .finally(next);
+    .catch(next);
 };
 
 const dislikeCard = (req, res, next) => {
@@ -81,7 +83,7 @@ const dislikeCard = (req, res, next) => {
       if (err.name === 'CastError') return res.status(400).send({ message: 'Невалидный id' });
       return res.status(500).send({ message: 'Произошла ошибка' });
     })
-    .finally(next);
+    .catch(next);
 };
 
 module.exports = {
