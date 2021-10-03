@@ -1,11 +1,10 @@
 const Card = require('../models/card');
+const NotFoundError = require('../constants/notFoundError');
+const ForbiddenError = require('../constants/forbiddenError');
 
 const getCards = (req, res, next) => {
   Card.find({})
     .then((cards) => res.status(200).send(cards))
-    .catch(() => {
-      res.status(500).send({ message: 'Произошла ошибка' });
-    })
     .catch(next);
 };
 
@@ -15,31 +14,24 @@ const createCard = (req, res, next) => {
 
   Card.create({ name, link, owner })
     .then((card) => res.status(200).send(card))
-    .catch((err) => {
-      if (err.name === 'ValidationError') return res.status(400).send({ message: 'Некорректные данные' });
-      if (err.name === 'CastError') return res.status(400).send({ message: 'Невалидный id' });
-      return res.status(500).send({ message: 'Произошла ошибка' });
-    })
     .catch(next);
 };
 
 const deleteCard = (req, res, next) => {
   const { cardId } = req.params;
-
-  Card.findByIdAndDelete(cardId)
+  const owner = req.user._id;
+  Card.findById(cardId)
     .then((card) => {
       if (!card) {
-        return res.status(404).send({
-          message: 'Карточка с таким ID не найдена.',
-        });
+        throw new NotFoundError('Карточка с таким ID не найдена.');
       }
-      return res.status(200).send({
+      if (owner !== String(card.owner)) {
+        throw new ForbiddenError('Нельзя удалить чужую карточку');
+      }
+      card.remove();
+      res.status(200).send({
         message: 'Карточка была удалена',
       });
-    })
-    .catch((err) => {
-      if (err.name === 'CastError') return res.status(400).send({ message: 'Невалидный id' });
-      return res.status(500).send({ message: 'Произошла ошибка' });
     })
     .catch(next);
 };
@@ -52,15 +44,9 @@ const likeCard = (req, res, next) => {
   )
     .then((card) => {
       if (!card) {
-        return res.status(404).send({
-          message: 'Карточка с таким ID не найдена.',
-        });
+        throw new NotFoundError('Карточка с таким ID не найдена');
       }
       return res.status(200).send(card);
-    })
-    .catch((err) => {
-      if (err.name === 'CastError') return res.status(400).send({ message: 'Невалидный id' });
-      return res.status(500).send({ message: 'Произошла ошибка' });
     })
     .catch(next);
 };
@@ -73,15 +59,9 @@ const dislikeCard = (req, res, next) => {
   )
     .then((card) => {
       if (!card) {
-        return res.status(404).send({
-          message: 'Карточка с таким ID не найдена.',
-        });
+        throw new NotFoundError('Карточка с таким ID не найдена');
       }
       return res.status(200).send(card);
-    })
-    .catch((err) => {
-      if (err.name === 'CastError') return res.status(400).send({ message: 'Невалидный id' });
-      return res.status(500).send({ message: 'Произошла ошибка' });
     })
     .catch(next);
 };

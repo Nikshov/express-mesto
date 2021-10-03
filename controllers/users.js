@@ -1,11 +1,16 @@
+const bcrypt = require('bcryptjs');
+
+const jwt = require('jsonwebtoken');
+
 const User = require('../models/user');
+
+const DuplicateError = require('../constants/duplicateError');
+const NotFoundError = require('../constants/notFoundError');
+const UnauthorizedError = require('../constants/unauthorizedError');
 
 const getUsers = (req, res, next) => {
   User.find({})
     .then((users) => res.status(200).json(users))
-    .catch(() => {
-      res.status(500).send({ message: 'Произошла ошибка' });
-    })
     .catch(next);
 };
 
@@ -13,27 +18,28 @@ const getUserById = (req, res, next) => {
   User.findById({ _id: req.params.userId })
     .then((user) => {
       if (!user) {
-        return res.status(404).send({
-          message: 'Пользователь с таким ID не найден.',
-        });
+        throw new NotFoundError('Пользователь с таким ID не найден.');
       }
       return res.status(200).send(user);
-    })
-    .catch((err) => {
-      if (err.name === 'CastError') return res.status(400).send({ message: 'Невалидный id' });
-      return res.status(500).send({ message: 'Произошла ошибка' });
     })
     .catch(next);
 };
 
 const createUser = (req, res, next) => {
-  const { name, about, avatar } = req.body;
-  User.create({ name, about, avatar })
-    .then((user) => res.status(200).send(user))
-    .catch((err) => {
-      if (err.name === 'ValidationError') return res.status(400).send({ message: 'Некорректные данные' });
-      return res.status(500).send({ message: 'Произошла ошибка' });
+  const {
+    name, about, avatar, email, password,
+  } = req.body;
+  User.findOne({ email })
+    .then((eMail) => {
+      if (eMail) throw new DuplicateError('Пользователь с такой почтой уже существует');
     })
+    .catch(next);
+  bcrypt.hash(password, 10)
+    .then((hash) => User.create({
+      name, about, avatar, email, password: hash,
+    })
+      .then((user) => res.status(200).send(user))
+      .catch(next))
     .catch(next);
 };
 
@@ -42,13 +48,8 @@ const updateUser = (req, res, next) => {
 
   User.findByIdAndUpdate(req.user._id, { name, about }, { new: true, runValidators: true })
     .then((user) => {
-      if (!user) return res.status(404).send({ message: 'Пользователь с таким ID не найден.' });
+      if (!user) throw new NotFoundError('Пользователь с таким ID не найден.');
       return res.status(200).send(user);
-    })
-    .catch((err) => {
-      if (err.name === 'ValidationError') return res.status(400).send({ message: 'Некорректные данные' });
-      if (err.name === 'CastError') return res.status(400).send({ message: 'Невалидный id' });
-      return res.status(500).send({ message: 'Произошла ошибка' });
     })
     .catch(next);
 };
@@ -58,14 +59,32 @@ const updateAvatar = (req, res, next) => {
 
   User.findByIdAndUpdate(req.user._id, { avatar }, { new: true, runValidators: true })
     .then((user) => {
-      if (!user) return res.status(404).send({ message: 'Пользователь с таким ID не найден.' });
+      if (!user) throw new NotFoundError('Пользователь с таким ID не найден.');
       return res.status(200).send(user);
     })
-    .catch((err) => {
-      if (err.name === 'ValidationError') return res.status(400).send({ message: 'Некорректные данные' });
-      if (err.name === 'CastError') return res.status(400).send({ message: 'Невалидный id' });
-      return res.status(500).send({ message: 'Произошла ошибка' });
+    .catch(next);
+};
+
+const login = (req, res, next) => {
+  const { email, password } = req.body;
+  User.findOne({ email }).select('+password')
+    .then((user) => {
+      if (!user) throw new UnauthorizedError('Неправильные почта или пароль');
+      bcrypt.compare(password, user.password)
+        .then((m) => {
+          if (!m) throw new UnauthorizedError('Неправильные почта или пароль');
+          const token = jwt.sign({ _id: user._id }, 'secret', { expiresIn: '7d' });
+          res.cookie('Authorization', token, { httpOnly: true });
+          return res.status(200).send({ message: 'Пользователь успешно залогинен' });
+        })
+        .catch(next);
     })
+    .catch(next);
+};
+
+const getActualUser = (req, res, next) => {
+  User.findById({ _id: req.user._id })
+    .then((user) => res.status(200).send(user))
     .catch(next);
 };
 
@@ -75,4 +94,6 @@ module.exports = {
   createUser,
   updateAvatar,
   updateUser,
+  login,
+  getActualUser,
 };
