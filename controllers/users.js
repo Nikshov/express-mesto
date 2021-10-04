@@ -74,8 +74,13 @@ const login = (req, res, next) => {
         .then((m) => {
           if (!m) throw new UnauthorizedError('Неправильные почта или пароль');
           const token = jwt.sign({ _id: user._id }, 'secret', { expiresIn: '7d' });
-          res.cookie('token', token, { httpOnly: true, maxAge: 604800 });
-          return res.status(200).send({ message: 'Пользователь успешно залогинен' });
+          res
+            .status(200)
+            .cookie('token', token, { maxAge: 604800000, httpOnly: true })
+            .send({ message: 'Пользователь успешно залогинен' });
+          // Не очень понял про повторную отправку,
+          // в консоли - ошибок о повторной установке хедеров нету.
+          // Да и отправляется, вроде, только 1 раз.
         })
         .catch(next);
     })
