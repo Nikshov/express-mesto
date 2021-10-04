@@ -74,7 +74,7 @@ const login = (req, res, next) => {
         .then((m) => {
           if (!m) throw new UnauthorizedError('Неправильные почта или пароль');
           const token = jwt.sign({ _id: user._id }, 'secret', { expiresIn: '7d' });
-          res.cookie('Authorization', token, { httpOnly: true });
+          res.cookie('token', token, { httpOnly: true, maxAge: 604800 });
           return res.status(200).send({ message: 'Пользователь успешно залогинен' });
         })
         .catch(next);
