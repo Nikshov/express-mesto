@@ -40,8 +40,9 @@ app.post('/signup', celebrate({
     avatar: Joi.string().custom(method),
   }),
 }), createUser);
-app.use('/users', auth, usersRouter);
-app.use('/cards', auth, cardsRouter);
+app.use(auth);
+app.use('/users', usersRouter);
+app.use('/cards', cardsRouter);
 
 app.use('*', (req, res, next) => {
   next(new NotFoundError('Запрашиваемая страница не найдена'));
